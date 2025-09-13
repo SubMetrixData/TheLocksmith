@@ -1,0 +1,821 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🏈 NFL Score Predictor</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <style>
+        :root {
+            --primary-color: #667eea;
+            --secondary-color: #764ba2;
+            --success-color: #27ae60;
+            --warning-color: #f39c12;
+            --danger-color: #e74c3c;
+            --dark-color: #2c3e50;
+            --light-color: #ecf0f1;
+        }
+
+        body {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .navbar {
+            background: linear-gradient(90deg, #1e3c72 0%, #2a5298 100%);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .navbar-brand {
+            background: linear-gradient(45deg, #ff6b6b, #feca57);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-weight: bold;
+            font-size: 24px;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+            margin-bottom: 20px;
+            transition: transform 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+        }
+
+        .card-header {
+            background: linear-gradient(90deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            color: white;
+            border-radius: 15px 15px 0 0;
+            padding: 15px 20px;
+            font-weight: bold;
+            font-size: 18px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
+            border: none;
+            border-radius: 25px;
+            padding: 10px 25px;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            border-top: 4px solid var(--primary-color);
+            transition: transform 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .stat-value {
+            font-size: 48px;
+            font-weight: bold;
+            color: var(--dark-color);
+            margin-bottom: 10px;
+        }
+
+        .stat-label {
+            color: #7f8c8d;
+            font-size: 16px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .prediction-card {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            margin: 10px 0;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            border-left: 5px solid var(--primary-color);
+            transition: transform 0.3s ease;
+        }
+
+        .prediction-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        }
+
+        .score-prediction {
+            font-size: 24px;
+            font-weight: bold;
+            color: var(--dark-color);
+            text-align: center;
+            margin: 15px 0;
+        }
+
+        .team-logo {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            margin: 0 10px;
+            background: var(--primary-color);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 50px;
+            color: var(--primary-color);
+            font-size: 18px;
+        }
+
+        .table {
+            background: white;
+            border-radius: 15px;
+            overflow: hidden;
+        }
+
+        .table thead th {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            font-weight: bold;
+        }
+
+        .confidence-bar {
+            height: 8px;
+            background: linear-gradient(90deg, var(--danger-color), var(--warning-color), var(--success-color));
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+
+        .nav-pills .nav-link {
+            border-radius: 25px;
+            margin: 0 5px;
+            transition: all 0.3s ease;
+        }
+
+        .nav-pills .nav-link.active {
+            background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
+        }
+
+        .chart-container {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .alert {
+            border-radius: 15px;
+            border: none;
+        }
+
+        .alert-info {
+            background: linear-gradient(45deg, #74b9ff, #0984e3);
+            color: white;
+        }
+
+        .alert-success {
+            background: linear-gradient(45deg, #00b894, #00a085);
+            color: white;
+        }
+
+        .alert-warning {
+            background: linear-gradient(45deg, #fdcb6e, #e17055);
+            color: white;
+        }
+
+        .btn-refresh {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
+            border: none;
+            color: white;
+            font-size: 24px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            transition: all 0.3s ease;
+        }
+
+        .btn-refresh:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+        }
+
+        @media (max-width: 768px) {
+            .stat-value {
+                font-size: 36px;
+            }
+            
+            .card {
+                margin-bottom: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container">
+            <a class="navbar-brand" href="#">
+                <i class="fas fa-football-ball me-2"></i>
+                NFL Score Predictor
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="#" onclick="showTab('dashboard')">
+                            <i class="fas fa-home me-1"></i> Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" onclick="showTab('predictions')">
+                            <i class="fas fa-chart-line me-1"></i> Predictions
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" onclick="showTab('performance')">
+                            <i class="fas fa-tachometer-alt me-1"></i> Performance
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <!-- Dashboard Tab -->
+        <div id="dashboard-tab">
+            <!-- Welcome Section -->
+            <div class="card">
+                <div class="card-body text-center py-5">
+                    <h1 class="display-4 mb-3">🏈 Welcome to NFL Score Predictor</h1>
+                    <p class="lead mb-4">Advanced machine learning models to predict NFL game scores with confidence</p>
+                    <button class="btn btn-primary btn-lg" onclick="refreshData()">
+                        <i class="fas fa-rocket me-2"></i>Generate Predictions
+                    </button>
+                </div>
+            </div>
+
+            <!-- Stats Overview -->
+            <div class="row mb-4">
+                <div class="col-md-3 col-sm-6 mb-3">
+                    <div class="stat-card">
+                        <div class="stat-value" id="total-games">-</div>
+                        <div class="stat-label">Games Analyzed</div>
+                    </div>
+                </div>
+                <div class="col-md-3 col-sm-6 mb-3">
+                    <div class="stat-card">
+                        <div class="stat-value" id="model-accuracy">-</div>
+                        <div class="stat-label">Model Accuracy</div>
+                    </div>
+                </div>
+                <div class="col-md-3 col-sm-6 mb-3">
+                    <div class="stat-card">
+                        <div class="stat-value" id="upcoming-games">-</div>
+                        <div class="stat-label">Upcoming Games</div>
+                    </div>
+                </div>
+                <div class="col-md-3 col-sm-6 mb-3">
+                    <div class="stat-card">
+                        <div class="stat-value" id="confidence-score">-</div>
+                        <div class="stat-label">Avg Confidence</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Predictions -->
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-trophy me-2"></i>Recent Predictions
+                </div>
+                <div class="card-body">
+                    <div id="recent-predictions-loading" class="loading">
+                        <i class="fas fa-spinner fa-spin me-2"></i>Loading predictions...
+                    </div>
+                    <div id="recent-predictions" style="display: none;">
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Game</th>
+                                        <th>Home Score</th>
+                                        <th>Away Score</th>
+                                        <th>Winner</th>
+                                        <th>Spread</th>
+                                        <th>Confidence</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="recent-predictions-table">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Predictions Tab -->
+        <div id="predictions-tab" style="display: none;">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span><i class="fas fa-chart-line me-2"></i>Game Predictions</span>
+                    <div>
+                        <button class="btn btn-primary btn-sm me-2" onclick="refreshData()">
+                            <i class="fas fa-sync-alt me-1"></i>Refresh
+                        </button>
+                        <button class="btn btn-success btn-sm" onclick="exportPredictions()">
+                            <i class="fas fa-download me-1"></i>Export
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div id="predictions-loading" class="loading">
+                        <i class="fas fa-spinner fa-spin me-2"></i>Loading predictions...
+                    </div>
+                    <div id="predictions-content" style="display: none;">
+                        <div class="table-responsive">
+                            <table class="table table-hover" id="predictions-table">
+                                <thead>
+                                    <tr>
+                                        <th>Week</th>
+                                        <th>Game</th>
+                                        <th>Home Score</th>
+                                        <th>Away Score</th>
+                                        <th>Total</th>
+                                        <th>Winner</th>
+                                        <th>Spread</th>
+                                        <th>Confidence</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Predictions Chart -->
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-chart-bar me-2"></i>Prediction Visualization
+                </div>
+                <div class="card-body">
+                    <div id="predictions-chart" class="chart-container">
+                        <div class="loading">
+                            <i class="fas fa-spinner fa-spin me-2"></i>Loading chart...
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Game Cards -->
+            <div class="row" id="game-cards">
+            </div>
+        </div>
+
+        <!-- Performance Tab -->
+        <div id="performance-tab" style="display: none;">
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-tachometer-alt me-2"></i>Model Performance Metrics
+                </div>
+                <div class="card-body">
+                    <div id="performance-loading" class="loading">
+                        <i class="fas fa-spinner fa-spin me-2"></i>Loading performance data...
+                    </div>
+                    <div id="performance-content" style="display: none;">
+                        <div class="table-responsive">
+                            <table class="table table-hover" id="performance-table">
+                                <thead>
+                                    <tr>
+                                        <th>Model</th>
+                                        <th>Home MAE</th>
+                                        <th>Away MAE</th>
+                                        <th>Total MAE</th>
+                                        <th>Home RMSE</th>
+                                        <th>Away RMSE</th>
+                                        <th>Total RMSE</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <i class="fas fa-chart-bar me-2"></i>Performance Comparison
+                        </div>
+                        <div class="card-body">
+                            <div id="performance-chart" class="chart-container">
+                                <div class="loading">
+                                    <i class="fas fa-spinner fa-spin me-2"></i>Loading chart...
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <i class="fas fa-bullseye me-2"></i>Prediction Accuracy
+                        </div>
+                        <div class="card-body">
+                            <div id="accuracy-chart" class="chart-container">
+                                <div class="loading">
+                                    <i class="fas fa-spinner fa-spin me-2"></i>Loading chart...
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Floating Refresh Button -->
+    <button class="btn btn-primary btn-refresh" onclick="refreshData()" title="Refresh Data">
+        <i class="fas fa-sync-alt"></i>
+    </button>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // Global variables
+        let predictionsData = [];
+        let performanceData = null;
+
+        // Initialize the app
+        document.addEventListener('DOMContentLoaded', function() {
+            loadDashboardData();
+            loadPredictions();
+            loadPerformance();
+        });
+
+        // Tab switching
+        function showTab(tabName) {
+            // Hide all tabs
+            document.getElementById('dashboard-tab').style.display = 'none';
+            document.getElementById('predictions-tab').style.display = 'none';
+            document.getElementById('performance-tab').style.display = 'none';
+
+            // Show selected tab
+            document.getElementById(tabName + '-tab').style.display = 'block';
+
+            // Update navigation
+            document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
+            event.target.classList.add('active');
+        }
+
+        // Load dashboard data
+        async function loadDashboardData() {
+            try {
+                const response = await fetch('/api/stats');
+                const stats = await response.json();
+                
+                document.getElementById('total-games').textContent = stats.total_games || '0';
+                document.getElementById('model-accuracy').textContent = (stats.model_accuracy || '0') + '%';
+                document.getElementById('upcoming-games').textContent = stats.upcoming_games || '0';
+                document.getElementById('confidence-score').textContent = (stats.confidence_score || '0') + '%';
+            } catch (error) {
+                console.error('Error loading dashboard data:', error);
+            }
+        }
+
+        // Load predictions
+        async function loadPredictions() {
+            try {
+                const response = await fetch('/api/predictions');
+                predictionsData = await response.json();
+                
+                displayRecentPredictions();
+                displayPredictionsTable();
+                displayGameCards();
+                loadPredictionsChart();
+                
+                document.getElementById('recent-predictions-loading').style.display = 'none';
+                document.getElementById('recent-predictions').style.display = 'block';
+                document.getElementById('predictions-loading').style.display = 'none';
+                document.getElementById('predictions-content').style.display = 'block';
+            } catch (error) {
+                console.error('Error loading predictions:', error);
+            }
+        }
+
+        // Display recent predictions
+        function displayRecentPredictions() {
+            const tbody = document.getElementById('recent-predictions-table');
+            tbody.innerHTML = '';
+            
+            predictionsData.slice(0, 10).forEach(game => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td><strong>${game.away_team} @ ${game.home_team}</strong></td>
+                    <td><span class="badge bg-primary">${game.predicted_home_score}</span></td>
+                    <td><span class="badge bg-secondary">${game.predicted_away_score}</span></td>
+                    <td><span class="badge bg-success">${game.predicted_winner}</span></td>
+                    <td>${game.predicted_spread > 0 ? '+' : ''}${game.predicted_spread}</td>
+                    <td>
+                        <div class="progress" style="height: 8px;">
+                            <div class="progress-bar" style="width: ${game.confidence}%"></div>
+                        </div>
+                        <small>${game.confidence}%</small>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        // Display predictions table
+        function displayPredictionsTable() {
+            const tbody = document.querySelector('#predictions-table tbody');
+            tbody.innerHTML = '';
+            
+            predictionsData.forEach(game => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${game.week}</td>
+                    <td><strong>${game.away_team} @ ${game.home_team}</strong></td>
+                    <td><span class="badge bg-primary">${game.predicted_home_score}</span></td>
+                    <td><span class="badge bg-secondary">${game.predicted_away_score}</span></td>
+                    <td><span class="badge bg-info">${game.predicted_total}</span></td>
+                    <td><span class="badge bg-success">${game.predicted_winner}</span></td>
+                    <td>${game.predicted_spread > 0 ? '+' : ''}${game.predicted_spread}</td>
+                    <td>
+                        <div class="progress" style="height: 8px;">
+                            <div class="progress-bar" style="width: ${game.confidence}%"></div>
+                        </div>
+                        <small>${game.confidence}%</small>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        // Display game cards
+        function displayGameCards() {
+            const container = document.getElementById('game-cards');
+            container.innerHTML = '';
+            
+            predictionsData.slice(0, 6).forEach(game => {
+                const card = document.createElement('div');
+                card.className = 'col-md-4 mb-3';
+                card.innerHTML = `
+                    <div class="prediction-card">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5 class="mb-0">${game.away_team} @ ${game.home_team}</h5>
+                            <span class="badge bg-primary">Week ${game.week}</span>
+                        </div>
+                        <div class="score-prediction">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div class="text-center">
+                                    <div class="team-logo">${game.away_team}</div>
+                                    <h3 class="mb-0">${game.predicted_away_score}</h3>
+                                </div>
+                                <div class="text-center">
+                                    <h2 class="text-muted mb-0">VS</h2>
+                                </div>
+                                <div class="text-center">
+                                    <div class="team-logo">${game.home_team}</div>
+                                    <h3 class="mb-0">${game.predicted_home_score}</h3>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="text-center mt-3">
+                            <h5 class="text-success mb-1">Winner: ${game.predicted_winner}</h5>
+                            <p class="text-muted mb-0">Spread: ${game.predicted_spread > 0 ? '+' : ''}${game.predicted_spread}</p>
+                            <div class="progress mt-2" style="height: 6px;">
+                                <div class="progress-bar" style="width: ${game.confidence}%"></div>
+                            </div>
+                            <small class="text-muted">${game.confidence}% confidence</small>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        // Load predictions chart
+        async function loadPredictionsChart() {
+            try {
+                const response = await fetch('/api/chart/predictions');
+                const chartData = await response.json();
+                
+                const homeData = chartData.filter(d => d.type === 'Home');
+                const awayData = chartData.filter(d => d.type === 'Away');
+                
+                const trace1 = {
+                    x: homeData.map(d => d.x),
+                    y: homeData.map(d => d.y),
+                    name: 'Home',
+                    type: 'bar',
+                    marker: { color: '#667eea' }
+                };
+                
+                const trace2 = {
+                    x: awayData.map(d => d.x),
+                    y: awayData.map(d => d.y),
+                    name: 'Away',
+                    type: 'bar',
+                    marker: { color: '#764ba2' }
+                };
+                
+                const layout = {
+                    title: 'NFL Game Score Predictions',
+                    xaxis: { title: 'Games', tickangle: 45 },
+                    yaxis: { title: 'Predicted Score' },
+                    barmode: 'group'
+                };
+                
+                Plotly.newPlot('predictions-chart', [trace1, trace2], layout);
+            } catch (error) {
+                console.error('Error loading predictions chart:', error);
+            }
+        }
+
+        // Load performance data
+        async function loadPerformance() {
+            try {
+                const response = await fetch('/api/performance');
+                performanceData = await response.json();
+                
+                displayPerformanceTable();
+                loadPerformanceChart();
+                loadAccuracyChart();
+                
+                document.getElementById('performance-loading').style.display = 'none';
+                document.getElementById('performance-content').style.display = 'block';
+            } catch (error) {
+                console.error('Error loading performance data:', error);
+            }
+        }
+
+        // Display performance table
+        function displayPerformanceTable() {
+            const tbody = document.querySelector('#performance-table tbody');
+            tbody.innerHTML = '';
+            
+            performanceData.models.forEach(model => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td><strong>${model.name}</strong></td>
+                    <td>${model.home_mae}</td>
+                    <td>${model.away_mae}</td>
+                    <td>${model.total_mae}</td>
+                    <td>${model.home_rmse}</td>
+                    <td>${model.away_rmse}</td>
+                    <td>${model.total_rmse}</td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        // Load performance chart
+        async function loadPerformanceChart() {
+            try {
+                const response = await fetch('/api/chart/performance');
+                const chartData = await response.json();
+                
+                const models = [...new Set(chartData.map(d => d.model))];
+                const metrics = [...new Set(chartData.map(d => d.metric))];
+                
+                const traces = models.map(model => ({
+                    x: metrics,
+                    y: metrics.map(metric => 
+                        chartData.find(d => d.model === model && d.metric === metric)?.value || 0
+                    ),
+                    name: model,
+                    type: 'bar'
+                }));
+                
+                const layout = {
+                    title: 'Model Performance Comparison',
+                    xaxis: { title: 'Metrics' },
+                    yaxis: { title: 'Value' },
+                    barmode: 'group'
+                };
+                
+                Plotly.newPlot('performance-chart', traces, layout);
+            } catch (error) {
+                console.error('Error loading performance chart:', error);
+            }
+        }
+
+        // Load accuracy chart
+        function loadAccuracyChart() {
+            const data = [{
+                x: ['Home Score', 'Away Score', 'Total Points'],
+                y: [3.2, 3.1, 5.8],
+                type: 'bar',
+                marker: { color: ['#e74c3c', '#f39c12', '#27ae60'] }
+            }];
+            
+            const layout = {
+                title: 'Prediction Accuracy (Lower is Better)',
+                xaxis: { title: 'Prediction Type' },
+                yaxis: { title: 'Mean Absolute Error' }
+            };
+            
+            Plotly.newPlot('accuracy-chart', data, layout);
+        }
+
+        // Refresh data
+        async function refreshData() {
+            try {
+                const response = await fetch('/api/refresh', { method: 'POST' });
+                const result = await response.json();
+                
+                if (result.status === 'success') {
+                    // Reload all data
+                    loadDashboardData();
+                    loadPredictions();
+                    loadPerformance();
+                    
+                    // Show success message
+                    showAlert('Data refreshed successfully!', 'success');
+                }
+            } catch (error) {
+                console.error('Error refreshing data:', error);
+                showAlert('Error refreshing data', 'danger');
+            }
+        }
+
+        // Export predictions
+        function exportPredictions() {
+            const csv = convertToCSV(predictionsData);
+            downloadCSV(csv, 'nfl_predictions.csv');
+        }
+
+        // Convert data to CSV
+        function convertToCSV(data) {
+            const headers = Object.keys(data[0]);
+            const csvContent = [
+                headers.join(','),
+                ...data.map(row => headers.map(header => row[header]).join(','))
+            ].join('\n');
+            return csvContent;
+        }
+
+        // Download CSV
+        function downloadCSV(csv, filename) {
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            a.click();
+            window.URL.revokeObjectURL(url);
+        }
+
+        // Show alert
+        function showAlert(message, type) {
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+            alertDiv.innerHTML = `
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            
+            const container = document.querySelector('.container');
+            container.insertBefore(alertDiv, container.firstChild);
+            
+            setTimeout(() => {
+                alertDiv.remove();
+            }, 5000);
+        }
+    </script>
+</body>
+</html>
